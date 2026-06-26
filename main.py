@@ -1,7 +1,6 @@
-# Точка входа, консольное меню
-
 """
 Главный модуль программы — консольный интерфейс генератора QR-кодов.
+Включает классическую генерацию и создание артовых QR-кодов с помощью ML.
 """
 
 import os
@@ -11,9 +10,10 @@ from validator import (
     validate_version,
     validate_error_correction,
     validate_color,
-    validate_filename,
 )
+#from artistic_qr import generate_artistic_qr, check_qr_readability, sharpen_and_enhance
 from qr_generator import generate_qr_code, save_qr_code, get_unique_filename
+from artistic_qr import generate_artistic_qr, check_qr_readability
 from logger import log_action, read_logs
 from config import (
     DEFAULT_VERSION,
@@ -22,6 +22,7 @@ from config import (
     DEFAULT_BORDER,
     DEFAULT_FILL_COLOR,
     DEFAULT_BACK_COLOR,
+    QR_SIZE,
 )
 
 
@@ -40,6 +41,7 @@ def print_menu():
     print("3. Сгенерировать и сохранить QR-код")
     print("4. Просмотреть историю (лог)")
     print("5. Выйти")
+    print("6. ✨ Сгенерировать артовый QR-код (ML)")
     print("=" * 50)
 
 
@@ -54,13 +56,13 @@ def main():
     fill_color = DEFAULT_FILL_COLOR
     back_color = DEFAULT_BACK_COLOR
     data_set = False
-    
+
     log_action("Программа запущена")
-    
+
     while True:
         clear_screen()
         print_menu()
-        
+
         # Отображаем текущие параметры
         print(f"\n📌 Текущие параметры:")
         print(f"   Данные: {'✅ заданы' if data_set else '❌ не заданы'}")
@@ -69,14 +71,14 @@ def main():
         print(f"   Размер модуля: {box_size}")
         print(f"   Цвет кода: {fill_color}")
         print(f"   Цвет фона: {back_color}")
-        
+
         choice = input("\nВыберите пункт меню: ").strip()
-        
+
         # === Пункт 1: Ввод данных ===
         if choice == "1":
             print("\n--- Ввод данных для QR-кода ---")
             text = input("Введите текст или URL: ").strip()
-            
+
             is_valid, error_msg = validate_text(text)
             if is_valid:
                 data = text
@@ -86,13 +88,13 @@ def main():
             else:
                 print(f"❌ {error_msg}")
                 log_action(f"Ошибка валидации данных: {error_msg}")
-            
+
             input("\nНажмите Enter для продолжения...")
-        
+
         # === Пункт 2: Настройка параметров ===
         elif choice == "2":
             print("\n--- Настройка параметров генерации ---")
-            
+
             # Версия
             v_input = input(f"Введите версию (1-40, текущая: {version}): ").strip()
             if v_input:
@@ -102,7 +104,7 @@ def main():
                     log_action(f"Установлена версия: {version}")
                 else:
                     print(f"❌ {error_msg}")
-            
+
             # Уровень коррекции
             ec_input = input(f"Введите уровень коррекции (L, M, Q, H, текущий: {error_correction}): ").strip()
             if ec_input:
@@ -112,7 +114,7 @@ def main():
                     log_action(f"Установлен уровень коррекции: {error_correction}")
                 else:
                     print(f"❌ {error_msg}")
-            
+
             # Размер модуля
             bs_input = input(f"Введите размер модуля (целое число, текущий: {box_size}): ").strip()
             if bs_input:
@@ -125,7 +127,7 @@ def main():
                         print("❌ Размер должен быть положительным числом.")
                 except ValueError:
                     print("❌ Размер должен быть целым числом.")
-            
+
             # Цвет кода
             fc_input = input(f"Введите цвет кода (текущий: {fill_color}): ").strip()
             if fc_input:
@@ -135,7 +137,7 @@ def main():
                     log_action(f"Установлен цвет кода: {fill_color}")
                 else:
                     print(f"❌ {error_msg}")
-            
+
             # Цвет фона
             bc_input = input(f"Введите цвет фона (текущий: {back_color}): ").strip()
             if bc_input:
@@ -145,22 +147,21 @@ def main():
                     log_action(f"Установлен цвет фона: {back_color}")
                 else:
                     print(f"❌ {error_msg}")
-            
+
             input("\nНажмите Enter для продолжения...")
-        
+
         # === Пункт 3: Генерация и сохранение ===
         elif choice == "3":
             print("\n--- Генерация QR-кода ---")
-            
+
             if not data_set:
                 print("❌ Сначала введите данные для кодирования (пункт 1).")
                 input("\nНажмите Enter для продолжения...")
                 continue
-            
+
             print(f"📝 Данные для кодирования: {data}")
             print(f"⚙️  Параметры: версия={version}, коррекция={error_correction}, размер={box_size}")
-            
-            # Генерируем QR-код
+
             try:
                 img = generate_qr_code(
                     data=data,
@@ -179,32 +180,85 @@ def main():
                 print(f"❌ {error_msg}")
                 input("\nНажмите Enter для продолжения...")
                 continue
-            
-            # Сохраняем в файл
+
             filename = get_unique_filename()
             print(f"\n💾 Будет создан файл: {filename}")
-            
+
             if save_qr_code(img, filename):
                 print(f"✅ QR-код сохранён в файл: {filename}")
                 log_action(f"Файл сохранён: {filename}")
             else:
                 print("❌ Не удалось сохранить файл.")
-            
+
             input("\nНажмите Enter для продолжения...")
-        
+
         # === Пункт 4: Просмотр истории ===
         elif choice == "4":
             print("\n--- История операций ---")
             logs = read_logs()
             print(logs)
             input("\nНажмите Enter для продолжения...")
-        
+
         # === Пункт 5: Выход ===
         elif choice == "5":
             log_action("Программа завершена")
             print("\n👋 До свидания!")
             sys.exit(0)
-        
+
+        # === НОВЫЙ ПУНКТ 6: Артовый QR ===
+        elif choice == "6":
+            print("\n--- Генерация артового QR-кода с помощью ML ---")
+            if not data_set:
+                print("❌ Сначала введите данные для кодирования (пункт 1).")
+                input("\nНажмите Enter для продолжения...")
+                continue
+
+            print("🖼️  Это займёт некоторое время (30–60 секунд при наличии GPU).")
+            print("📝 Используется Stable Diffusion + ControlNet.")
+            confirm = input("Продолжить? (y/n): ").strip().lower()
+            if confirm != 'y':
+                continue
+
+            # Запрос пользовательского промпта
+            use_custom_prompt = input("Хотите ввести свой промпт (описание изображения)? (y/n): ").strip().lower()
+            custom_prompt = None
+            if use_custom_prompt == 'y':
+                custom_prompt = input("Введите описание изображения: ").strip()
+                if not custom_prompt:
+                    print("❌ Промпт не может быть пустым. Будет использован стандартный.")
+                    custom_prompt = None
+
+            try:
+                artistic_img = generate_artistic_qr(data, prompt=custom_prompt)
+                # Применяем повышение чёткости
+                # artistic_img = sharpen_and_enhance(artistic_img)
+
+                # Сохраняем с уникальным именем (префикс artistic_qr)
+                filename = get_unique_filename(base_name="artistic_qr", extension=".png")
+                artistic_img.save(filename)
+                log_action(f"Артовый QR-код сохранён как {filename}")
+                print(f"✅ Артовый QR-код сохранён в файл: {filename}")
+
+                # Проверка читаемости (если установлен pyzbar)
+                if check_qr_readability(filename):
+                    print("✅ QR-код успешно сканируется.")
+                else:
+                    print("⚠️ Внимание: QR-код может не сканироваться. Рекомендуется проверить его смартфоном.")
+                    print("   При необходимости измените параметры в config.py (CONTROLNET_SCALE, STRENGTH).")
+
+            except ImportError as e:
+                error_msg = f"Отсутствует необходимая библиотека: {e}. Установите зависимости из requirements.txt"
+                log_action(error_msg)
+                print(f"❌ {error_msg}")
+            except Exception as e:
+                error_msg = f"Ошибка при генерации артового QR: {e}"
+                log_action(error_msg)
+                print(f"❌ {error_msg}")
+                print("Убедитесь, что установлены все зависимости (diffusers, torch, transformers и др.)")
+                print("и есть интернет для загрузки моделей (около 5 ГБ).")
+
+            input("\nНажмите Enter для продолжения...")
+
         # === Неверный выбор ===
         else:
             print("❌ Неверный пункт меню. Попробуйте снова.")
